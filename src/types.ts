@@ -21,6 +21,7 @@ export interface VideoItem {
   posterUrl?: string;
   filePath?: string;
   remoteUrl?: string;
+  hasIndexedDbBlob?: boolean;
 }
 
 export interface VcdnConfig {

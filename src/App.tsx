@@ -9,6 +9,7 @@ import { AnalyticsView } from './components/AnalyticsView';
 import { ApiDocsView } from './components/ApiDocsView';
 import { SettingsView } from './components/SettingsView';
 import { VideoPlayerModal } from './components/VideoPlayerModal';
+import { EmbedPlayerView } from './components/EmbedPlayerView';
 import { ActiveTab, VideoItem, VcdnConfig } from './types';
 import {
   getStoredVideos,
@@ -20,8 +21,16 @@ import {
   saveStoredConfig,
   DEFAULT_CONFIG
 } from './utils/storage';
+import { deleteVideoBlob } from './utils/indexedDb';
 
 export default function App() {
+  // If the path is /embed/:id, render standalone player for iframes
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  if (pathname.startsWith('/embed/')) {
+    const embedId = pathname.replace('/embed/', '').replace(/\/$/, '');
+    return <EmbedPlayerView videoId={embedId} />;
+  }
+
   const [activeTab, setActiveTab] = useState<ActiveTab>('library');
   const [videos, setVideos] = useState<VideoItem[]>(() => getStoredVideos());
   const [config, setConfig] = useState<VcdnConfig>(() => getStoredConfig());
@@ -84,8 +93,9 @@ export default function App() {
   };
 
   const handleDeleteVideo = async (id: string) => {
-    // 1. Delete from localStorage
+    // 1. Delete from localStorage and IndexedDB
     const updated = deleteVideoFromStorage(id);
+    deleteVideoBlob(id).catch(() => {});
     setVideos(updated);
 
     if (selectedVideo?.id === id) {

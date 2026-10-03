@@ -4,14 +4,12 @@ import {
   Copy,
   Check,
   Code2,
-  Share2,
-  Download,
-  Info,
   ExternalLink,
   Layers,
-  Sparkles
+  AlertCircle
 } from 'lucide-react';
 import { VideoItem } from '../types';
+import { getVideoBlob } from '../utils/indexedDb';
 
 interface VideoPlayerModalProps {
   video: VideoItem | null;
@@ -21,7 +19,8 @@ interface VideoPlayerModalProps {
 export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ video, onClose }) => {
   const [activeCodeTab, setActiveCodeTab] = useState<'iframe' | 'hls' | 'direct' | 'react'>('iframe');
   const [copied, setCopied] = useState(false);
-  const [showPreviewIframe, setShowPreviewIframe] = useState(false);
+  const [streamSrc, setStreamSrc] = useState<string>('');
+  const [hasPlaybackError, setHasPlaybackError] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -31,12 +30,48 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ video, onClo
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  useEffect(() => {
+    let activeObjectUrl = '';
+    setHasPlaybackError(false);
+
+    async function resolveStream() {
+      if (!video) return;
+
+      // 1. Check if there is an IndexedDB Blob saved for this video
+      try {
+        const blob = await getVideoBlob(video.id);
+        if (blob) {
+          activeObjectUrl = URL.createObjectURL(blob);
+          setStreamSrc(activeObjectUrl);
+          return;
+        }
+      } catch (err) {
+        console.error('Error fetching blob from IndexedDB:', err);
+      }
+
+      // 2. Direct web URL (e.g., sample mp4 or ingested URL)
+      if (video.streamUrl && video.streamUrl.startsWith('http')) {
+        setStreamSrc(video.streamUrl);
+        return;
+      }
+
+      // 3. Server streaming endpoint
+      const origin = window.location.origin;
+      setStreamSrc(`${origin}${video.streamUrl}`);
+    }
+
+    resolveStream();
+
+    return () => {
+      if (activeObjectUrl) {
+        URL.revokeObjectURL(activeObjectUrl);
+      }
+    };
+  }, [video]);
+
   if (!video) return null;
 
   const origin = window.location.origin;
-  const streamSrc = video.streamUrl.startsWith('http')
-    ? video.streamUrl
-    : `${origin}${video.streamUrl}`;
   const embedSrc = `${origin}${video.embedUrl}`;
   const hlsSrc = video.hlsUrl.startsWith('http')
     ? video.hlsUrl
@@ -73,7 +108,7 @@ export default function VcdnVideo() {
       case 'hls':
         return hlsSrc;
       case 'direct':
-        return streamSrc;
+        return streamSrc || video.streamUrl;
       case 'react':
         return reactSnippet;
       default:
@@ -112,20 +147,35 @@ export default function VcdnVideo() {
         {/* Modal Scrollable Content */}
         <div className="overflow-y-auto p-3 sm:p-5 space-y-4 sm:space-y-6">
           {/* Video Player Box */}
-          <div className="relative aspect-video bg-black rounded-xl overflow-hidden border border-neutral-800 shadow-inner">
-            <video
-              controls
-              autoPlay
-              playsInline
-              poster={video.posterUrl}
-              src={streamSrc}
-              className="w-full h-full object-contain"
-            >
-              Your browser does not support the video tag.
-            </video>
+          <div className="relative aspect-video bg-black rounded-xl overflow-hidden border border-neutral-800 shadow-inner flex items-center justify-center">
+            {streamSrc ? (
+              <video
+                controls
+                autoPlay
+                playsInline
+                poster={video.posterUrl}
+                src={streamSrc}
+                onError={() => setHasPlaybackError(true)}
+                className="w-full h-full object-contain"
+              >
+                Your browser does not support the video tag.
+              </video>
+            ) : (
+              <div className="text-neutral-500 text-xs font-mono">Loading media stream...</div>
+            )}
+
+            {hasPlaybackError && (
+              <div className="absolute inset-0 bg-neutral-950/90 flex flex-col items-center justify-center p-4 text-center z-10 space-y-2">
+                <AlertCircle className="w-6 h-6 text-amber-400" />
+                <p className="text-xs text-neutral-300 font-medium">Video file stream not found on this origin</p>
+                <p className="text-[11px] text-neutral-500 max-w-sm">
+                  If deployed on Vercel without persistent backend storage, ensure video is saved to IndexedDB or stream via URL Ingestion.
+                </p>
+              </div>
+            )}
 
             {/* VCDN Edge Overlay Watermark */}
-            <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 px-2 py-1 rounded bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-mono font-medium text-sky-400 pointer-events-none flex items-center gap-1.5">
+            <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 px-2 py-1 rounded bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-mono font-medium text-sky-400 pointer-events-none flex items-center gap-1.5 z-10">
               <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
               <span>VCDN EDGE</span>
             </div>

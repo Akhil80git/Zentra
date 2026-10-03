@@ -11,6 +11,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { VideoItem, VcdnConfig } from '../types';
+import { saveVideoBlob, generateVideoPoster } from '../utils/indexedDb';
 
 interface UploadViewProps {
   config: VcdnConfig | null;
@@ -129,8 +130,24 @@ export const UploadView: React.FC<UploadViewProps> = ({
       }
     });
 
-    const handleFallbackClientUpload = () => {
-      const vidId = 'vcdn_upload_' + Date.now().toString(36);
+    const handleFallbackClientUpload = async () => {
+      const vidId = 'vcdn_upload_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 6);
+      
+      // Permanently save video file in IndexedDB
+      try {
+        await saveVideoBlob(vidId, selectedFile);
+      } catch (e) {
+        console.error('Failed to save to IndexedDB:', e);
+      }
+
+      // Generate poster thumbnail
+      let posterDataUrl = '';
+      try {
+        posterDataUrl = await generateVideoPoster(selectedFile);
+      } catch (e) {
+        // ignore
+      }
+
       const blobUrl = URL.createObjectURL(selectedFile);
       const cleanTitle = title?.trim() || selectedFile.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
       const parsedTags = typeof tags === 'string' ? tags.split(',').map((t) => t.trim()).filter(Boolean) : ['Upload', 'VCDN'];
@@ -153,9 +170,11 @@ export const UploadView: React.FC<UploadViewProps> = ({
         createdAt: new Date().toISOString(),
         streamUrl: blobUrl,
         hlsUrl: blobUrl,
-        embedUrl: `/embed/${vidId}`
+        embedUrl: `/embed/${vidId}`,
+        posterUrl: posterDataUrl || undefined,
+        hasIndexedDbBlob: true
       };
-      setUploadStatus('Ready! Stored in local storage & VCDN cache.');
+      setUploadStatus('Ready! Stored in persistent browser storage & VCDN cache.');
       setUploadedVideo(fallbackVideo);
       onUploadSuccess(fallbackVideo);
     };
