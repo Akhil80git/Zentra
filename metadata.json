@@ -1,0 +1,6 @@
+{
+  "name": "VCDN Video Studio",
+  "description": "Cloud video upload, CDN edge distribution, HLS transcoding, and custom player embeds powered by VCDN API.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

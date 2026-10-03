@@ -1,0 +1,13 @@
+{
+  "apiKey": "vcdn_sk_867ea542bb48b7653b5d0f13412826ce4e18f41e675bc72e",
+  "baseUrl": "https://api.vcdn.io/v1",
+  "region": "ap-south-1 (Mumbai / Asia-South)",
+  "watermarkEnabled": false,
+  "hlsTranscode": true,
+  "adaptiveResolutions": [
+    "1080p",
+    "720p",
+    "480p",
+    "360p"
+  ]
+}

@@ -1,0 +1,92 @@
+[
+  {
+    "id": "vcdn_vid_01k9",
+    "title": "Global Tech Keynote & Live CDN Edge Architecture",
+    "filename": "sample_keynote.mp4",
+    "originalName": "TechKeynote_2026_Master_4K.mp4",
+    "size": 48920150,
+    "formattedSize": "46.7 MB",
+    "duration": 184,
+    "formattedDuration": "3:04",
+    "resolutions": [
+      "1080p",
+      "720p",
+      "480p"
+    ],
+    "status": "ready",
+    "views": 1420,
+    "bandwidthUsedMb": 66314,
+    "storageZone": "Asia-South (Mumbai Edge)",
+    "access": "public",
+    "tags": [
+      "Keynote",
+      "Cloud",
+      "Architecture"
+    ],
+    "createdAt": "2026-10-02T15:27:47.632Z",
+    "streamUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    "hlsUrl": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+    "embedUrl": "/embed/vcdn_vid_01k9",
+    "posterUrl": "/src/assets/images/tech_keynote_poster_1791041068529.jpg"
+  },
+  {
+    "id": "vcdn_vid_02m8",
+    "title": "Ultra-HD Cosmic Aurora Star Trail Timelapse",
+    "filename": "aurora_timelapse.mp4",
+    "originalName": "Aurora_Timelapse_NightSky.mp4",
+    "size": 89340210,
+    "formattedSize": "85.2 MB",
+    "duration": 215,
+    "formattedDuration": "3:35",
+    "resolutions": [
+      "1080p",
+      "720p"
+    ],
+    "status": "ready",
+    "views": 3890,
+    "bandwidthUsedMb": 331428,
+    "storageZone": "Global Anycast Edge",
+    "access": "public",
+    "tags": [
+      "Cinematography",
+      "Timelapse",
+      "Nature"
+    ],
+    "createdAt": "2026-10-01T15:27:47.632Z",
+    "streamUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    "hlsUrl": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+    "embedUrl": "/embed/vcdn_vid_02m8",
+    "posterUrl": "/src/assets/images/nature_timelapse_poster_1791041084102.jpg"
+  },
+  {
+    "id": "vcdn_vid_03p4",
+    "title": "Product Walkthrough & Developer API Quickstart",
+    "filename": "api_quickstart.mp4",
+    "originalName": "VCDN_SDK_Integration_Guide.mp4",
+    "size": 24117248,
+    "formattedSize": "23.0 MB",
+    "duration": 120,
+    "formattedDuration": "2:00",
+    "resolutions": [
+      "1080p",
+      "720p",
+      "480p",
+      "360p"
+    ],
+    "status": "ready",
+    "views": 840,
+    "bandwidthUsedMb": 19320,
+    "storageZone": "Singapore Edge",
+    "access": "unlisted",
+    "tags": [
+      "Tutorial",
+      "Developer",
+      "API"
+    ],
+    "createdAt": "2026-10-03T09:27:47.632Z",
+    "streamUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    "hlsUrl": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+    "embedUrl": "/embed/vcdn_vid_03p4",
+    "posterUrl": "/src/assets/images/tech_keynote_poster_1791041068529.jpg"
+  }
+]
