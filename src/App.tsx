@@ -10,72 +10,122 @@ import { ApiDocsView } from './components/ApiDocsView';
 import { SettingsView } from './components/SettingsView';
 import { VideoPlayerModal } from './components/VideoPlayerModal';
 import { ActiveTab, VideoItem, VcdnConfig } from './types';
+import {
+  getStoredVideos,
+  saveStoredVideos,
+  addVideoToStorage,
+  deleteVideoFromStorage,
+  incrementVideoViewsInStorage,
+  getStoredConfig,
+  saveStoredConfig,
+  DEFAULT_CONFIG
+} from './utils/storage';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('library');
-  const [videos, setVideos] = useState<VideoItem[]>([]);
-  const [config, setConfig] = useState<VcdnConfig | null>(null);
+  const [videos, setVideos] = useState<VideoItem[]>(() => getStoredVideos());
+  const [config, setConfig] = useState<VcdnConfig>(() => getStoredConfig());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Fetch initial config and videos
+  // Initialize and background-sync with backend if active
   useEffect(() => {
-    async function init() {
+    async function syncBackend() {
       try {
         const [configRes, videosRes] = await Promise.all([
-          fetch('/api/vcdn/config'),
-          fetch('/api/vcdn/videos')
+          fetch('/api/vcdn/config').catch(() => null),
+          fetch('/api/vcdn/videos').catch(() => null)
         ]);
 
-        if (configRes.ok) {
+        if (configRes && configRes.ok) {
           const cfgData = await configRes.json();
-          setConfig(cfgData);
+          if (cfgData) {
+            setConfig(cfgData);
+            saveStoredConfig(cfgData);
+          }
         }
 
-        if (videosRes.ok) {
+        if (videosRes && videosRes.ok) {
           const vidData = await videosRes.json();
-          if (vidData.videos) {
-            setVideos(vidData.videos);
+          if (Array.isArray(vidData.videos) && vidData.videos.length > 0) {
+            // Merge with local storage videos so no user uploaded video is lost
+            const currentLocal = getStoredVideos();
+            const map = new Map<string, VideoItem>();
+
+            // Prioritize local storage (has newly uploaded items)
+            currentLocal.forEach((v) => map.set(v.id, v));
+
+            // Merge server videos if not present
+            vidData.videos.forEach((v: VideoItem) => {
+              if (!map.has(v.id)) {
+                map.set(v.id, v);
+              }
+            });
+
+            const merged = Array.from(map.values());
+            setVideos(merged);
+            saveStoredVideos(merged);
           }
         }
       } catch (err) {
-        console.error('Failed to load initial data:', err);
-      } finally {
-        setIsLoading(false);
+        console.warn('Backend sync skipped, running on offline/localStorage mode');
       }
     }
-    init();
+
+    syncBackend();
   }, []);
 
   const handleUploadSuccess = (newVideo: VideoItem) => {
-    setVideos((prev) => [newVideo, ...prev]);
+    // 1. Permanently persist in localStorage
+    const updated = addVideoToStorage(newVideo);
+    setVideos(updated);
   };
 
   const handleDeleteVideo = async (id: string) => {
+    // 1. Delete from localStorage
+    const updated = deleteVideoFromStorage(id);
+    setVideos(updated);
+
+    if (selectedVideo?.id === id) {
+      setSelectedVideo(null);
+    }
+
+    // 2. Also try backend delete
     try {
-      const res = await fetch(`/api/vcdn/videos/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setVideos((prev) => prev.filter((v) => v.id !== id));
-        if (selectedVideo?.id === id) {
-          setSelectedVideo(null);
-        }
-      }
+      await fetch(`/api/vcdn/videos/${id}`, { method: 'DELETE' });
     } catch (e) {
-      console.error('Failed to delete video:', e);
+      // Offline fallback
     }
   };
 
+  const handleSelectVideo = (video: VideoItem) => {
+    setSelectedVideo(video);
+    // Increment view count in localStorage
+    const updated = incrementVideoViewsInStorage(video.id);
+    setVideos(updated);
+
+    // Sync with backend if available
+    fetch(`/api/vcdn/videos/${video.id}`).catch(() => {});
+  };
+
   const handleUpdateConfig = async (updated: Partial<VcdnConfig>) => {
-    const res = await fetch('/api/vcdn/config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updated)
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setConfig(data.config);
+    const newConfig: VcdnConfig = {
+      ...config,
+      ...updated
+    };
+    setConfig(newConfig);
+    saveStoredConfig(newConfig);
+
+    try {
+      await fetch('/api/vcdn/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newConfig)
+      });
+    } catch (e) {
+      // Handled by local persistence
     }
   };
 
@@ -123,7 +173,7 @@ export default function App() {
                 <VideoLibrary
                   videos={videos}
                   searchQuery={searchQuery}
-                  onSelectVideo={setSelectedVideo}
+                  onSelectVideo={handleSelectVideo}
                   onDeleteVideo={handleDeleteVideo}
                   onOpenUpload={() => setActiveTab('upload')}
                 />
@@ -133,7 +183,7 @@ export default function App() {
                 <UploadView
                   config={config}
                   onUploadSuccess={handleUploadSuccess}
-                  onOpenPlayer={setSelectedVideo}
+                  onOpenPlayer={handleSelectVideo}
                 />
               )}
 
@@ -141,7 +191,7 @@ export default function App() {
                 <RemoteIngestView
                   config={config}
                   onIngestSuccess={handleUploadSuccess}
-                  onOpenPlayer={setSelectedVideo}
+                  onOpenPlayer={handleSelectVideo}
                 />
               )}
 

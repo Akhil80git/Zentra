@@ -22,9 +22,9 @@ if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 const DB_FILE = path.join(DATA_DIR, 'videos.json');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 
-// Default API Key from user
-const DEFAULT_API_KEY = process.env.VCDN_API_KEY || 'vcdn_sk_867ea542bb48b7653b5d0f13412826ce4e18f41e675bc72e';
-const DEFAULT_BASE_URL = process.env.VCDN_BASE_URL || 'https://api.vcdn.io/v1';
+// Hardcoded VCDN API Key & Base URL (works out of the box in production without any .env)
+const DEFAULT_API_KEY = 'vcdn_sk_867ea542bb48b7653b5d0f13412826ce4e18f41e675bc72e';
+const DEFAULT_BASE_URL = 'https://api.vcdn.io/v1';
 
 export interface VcdnConfig {
   apiKey: string;
